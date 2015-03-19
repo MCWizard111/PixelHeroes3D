@@ -1,0 +1,104 @@
+import org.apache.tools.ant.filters.FixCrLfFilter
+import org.apache.tools.ant.filters.ReplaceTokens
+
+def filteredSourceDir = file("${buildDir}/filtered")
+
+apply plugin 'java'
+
+sourceCompatibility = 1.8
+
+group = "org.pixelheroes"
+archivesBaseName = "PixelHeroes3D"
+
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sonatype-nexus'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.0'
+}
+
+task processVersion(type: Copy) {
+    from sourceSets.main.java
+    into filteredSourceDir
+
+    filter(FixCrLfFilter)
+    filter(ReplaceTokens, tokens: ['version': version])
+
+    filter { String line ->
+        ("$line".replaceAll('"PixelHeroes3D:BuildNumber"', '"' + version + '"'))
+    }
+}
+
+sourceSets {
+    filtered {
+        java {
+            srcDirs = [filteredSourceDir]
+        }
+    }
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileJava.source = sourceSets.filtered.java
+compileJava.dependsOn processVersion
+
+dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+    compile 'org.lwjgl.lwjgl:lwjgl_util:2.9.3'
+    compile 'org.lwjgl.lwjgl:lwjgl:2.9.3'
+    compile 'io.netty:netty-all:4.0.25.Final'
+    compile 'com.google.guava:guava:18.0'
+    compile 'com.google.code.gson:gson:2.3.1'
+    compile 'org.reflections:reflections:0.9.9'
+    compile 'org.javassist:javassist:3.19.0-GA'
+    compile 'org.luaj:luaj-jse:3.0'
+    compile 'net.sf.trove4j:trove4j:3.0.3'
+    compile 'org.ow2.asm:asm-all:5.0.3'
+    compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.1'
+    compile 'org.apache.logging.log4j:log4j-core:2.1'
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'PixelHeroes3D', 'Implementation-Version': version, 'Main-Class': clientProdMainClass
+    }
+}
+
+task runClient(type: JavaExec, dependsOn: 'classes') {
+    main = clientProdMainClass
+    classpath = configurations.runtime
+    classpath += sourceSets.main.runtimeClasspath
+    jvmArgs = ['-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled', '-Djava.system.class.loader=org.pixelheroes.PixelClassLoader']
+    standardInput = System.in
+}
+
+task runClientDev(type: JavaExec, dependsOn: 'classes') {
+    main = clientDevMainClass
+    classpath = configurations.runtime
+    classpath += sourceSets.main.runtimeClasspath
+    jvmArgs = ['-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled', '-Djava.system.class.loader=org.pixelheroes.PixelClassLoader']
+    standardInput = System.in
+}
+
+task runServer(type: JavaExec, dependsOn: 'classes') {
+    main = serverProdMainClass
+    classpath = configurations.runtime
+    classpath += sourceSets.main.runtimeClasspath
+    jvmArgs = ['-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled', '-Djava.system.class.loader=org.pixelheroes.PixelClassLoader']
+    standardInput = System.in
+}
+
+task runServerDev(type: JavaExec, dependsOn: 'classes') {
+    main = serverDevMainClass
+    classpath = configurations.runtime
+    classpath += sourceSets.main.runtimeClasspath
+    jvmArgs = ['-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled', '-Djava.system.class.loader=org.pixelheroes.PixelClassLoader']
+    standardInput = System.in
+}
