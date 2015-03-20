@@ -3,13 +3,16 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 def filteredSourceDir = file("${buildDir}/filtered")
 
-apply plugin 'java'
+
+apply plugin: 'java'
 
 sourceCompatibility = 1.8
 
+// Maven Artefacts Info
 group = "org.pixelheroes"
-archivesBaseName = "PixelHeroes3D"
+archivesBaseName = 'PixelHeroes3D'
 
+//IDE
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
@@ -28,12 +31,13 @@ task wrapper(type: Wrapper) {
 task processVersion(type: Copy) {
     from sourceSets.main.java
     into filteredSourceDir
-
+    // Substitute property references in files
+    // Use some of the filters provided by Ant
     filter(FixCrLfFilter)
     filter(ReplaceTokens, tokens: ['version': version])
-
+    // Use a closure to filter each line
     filter { String line ->
-        ("$line".replaceAll('"PixelHeroes3D:BuildNumber"', '"' + version + '"'))
+        ("$line".replaceAll('"PixelHeroes:BuildNumber"', '"' + version + '"'))
     }
 }
 
@@ -45,8 +49,12 @@ sourceSets {
     }
 }
 
+//force UTF-8 to the compileJava task
 compileJava.options.encoding = 'UTF-8'
+
+// tell the compileJava task to compile the filtered source
 compileJava.source = sourceSets.filtered.java
+// Add dependencies processVersion to compileJava task
 compileJava.dependsOn processVersion
 
 dependencies {
@@ -65,11 +73,14 @@ dependencies {
     compile 'org.apache.logging.log4j:log4j-core:2.1'
 }
 
-jar {
-    manifest {
-        attributes 'Implementation-Title': 'PixelHeroes3D', 'Implementation-Version': version, 'Main-Class': clientProdMainClass
-    }
-}
+jar
+        {
+            manifest {
+                attributes 'Implementation-Title': 'PixelHeroes3D', 'Implementation-Version': version, 'Main-Class': clientProdMainClass
+            }
+        }
+
+// ------------------------------- RUN CONFIG ------------------------------- //
 
 task runClient(type: JavaExec, dependsOn: 'classes') {
     main = clientProdMainClass

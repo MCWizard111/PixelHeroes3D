@@ -1,2 +1,2 @@
-public class ClientDevStart {
+public class ClientDevStart extends DevStart {
 }
